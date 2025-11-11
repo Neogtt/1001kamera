@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1001 Medya - Kamera Yönetim Sistemi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        .header .logo {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .cameras-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .camera-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .camera-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .camera-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .camera-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .camera-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .camera-actions button {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .video-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #999;
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .empty-state h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #999;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="logo">1001 Medya</span> - Kamera Yönetim Sistemi</h1>
+            <button class="btn btn-primary" onclick="openAddCameraModal()">+ Yeni Kamera Ekle</button>
+        </div>
+
+        <div id="cameras-container" class="cameras-grid">
+            <!-- Kameralar buraya eklenecek -->
+        </div>
+
+        <!-- Kamera Ekleme Modal -->
+        <div id="addCameraModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Yeni Kamera Ekle</h2>
+                    <span class="close" onclick="closeAddCameraModal()">&times;</span>
+                </div>
+                <form id="addCameraForm">
+                    <div class="form-group">
+                        <label>Kamera Adı</label>
+                        <input type="text" id="cameraName" required placeholder="Örn: Giriş Kapısı Kamerası">
+                    </div>
+                    <div class="form-group">
+                        <label>Kamera Tipi</label>
+                        <select id="cameraType" required onchange="updateCameraForm()">
+                            <option value="rtsp">RTSP Stream</option>
+                            <option value="http">HTTP Stream</option>
+                            <option value="ip_webcam">IP Webcam</option>
+                            <option value="local">Yerel Kamera</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="urlGroup">
+                        <label>Kamera URL/Adresi</label>
+                        <input type="text" id="cameraUrl" placeholder="Örn: rtsp://192.168.1.100:554/stream">
+                    </div>
+                    <div class="form-group" id="indexGroup" style="display: none;">
+                        <label>Kamera Index</label>
+                        <input type="number" id="cameraIndex" value="0" min="0">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Kullanıcı Adı (Opsiyonel)</label>
+                            <input type="text" id="cameraUsername" placeholder="admin">
+                        </div>
+                        <div class="form-group">
+                            <label>Şifre (Opsiyonel)</label>
+                            <input type="password" id="cameraPassword" placeholder="••••••••">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Genişlik (Opsiyonel)</label>
+                            <input type="number" id="cameraWidth" placeholder="1920">
+                        </div>
+                        <div class="form-group">
+                            <label>Yükseklik (Opsiyonel)</label>
+                            <input type="number" id="cameraHeight" placeholder="1080">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>FPS (Opsiyonel)</label>
+                        <input type="number" id="cameraFps" placeholder="30" min="1" max="60">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Kamerayı Ekle</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cameras = [];
+
+        // Sayfa yüklendiğinde kameraları getir
+        window.addEventListener('DOMContentLoaded', () => {
+            loadCameras();
+            setInterval(loadCameras, 5000); // Her 5 saniyede bir güncelle
+        });
+
+        // Kamera formunu güncelle
+        function updateCameraForm() {
+            const type = document.getElementById('cameraType').value;
+            const urlGroup = document.getElementById('urlGroup');
+            const indexGroup = document.getElementById('indexGroup');
+            
+            if (type === 'local') {
+                urlGroup.style.display = 'none';
+                indexGroup.style.display = 'block';
+            } else {
+                urlGroup.style.display = 'block';
+                indexGroup.style.display = 'none';
+            }
+        }
+
+        // Kameraları yükle
+        async function loadCameras() {
+            try {
+                const response = await fetch('/api/cameras');
+                cameras = await response.json();
+                renderCameras();
+            } catch (error) {
+                console.error('Kameralar yüklenirken hata:', error);
+            }
+        }
+
+        // Kameraları render et
+        function renderCameras() {
+            const container = document.getElementById('cameras-container');
+            
+            if (cameras.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Henüz kamera eklenmemiş</h3>
+                        <p>Yeni kamera eklemek için yukarıdaki butona tıklayın</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = cameras.map(camera => `
+                <div class="camera-card">
+                    <div class="camera-header">
+                        <div>
+                            <div class="camera-title">${camera.name}</div>
+                            <span class="status-badge status-${camera.status}">${camera.status === 'active' ? 'Aktif' : 'Pasif'}</span>
+                        </div>
+                        <div class="camera-actions">
+                            <button class="btn btn-success" onclick="testCamera('${camera.id}')">Test</button>
+                            <button class="btn btn-danger" onclick="deleteCamera('${camera.id}')">Sil</button>
+                        </div>
+                    </div>
+                    <div class="video-container">
+                        <img src="/video_feed/${camera.id}" alt="${camera.name}" 
+                             onerror="this.parentElement.innerHTML='<div class=\\'video-placeholder\\'>Kamera bağlantısı kurulamadı</div>'">
+                    </div>
+                    <div style="font-size: 12px; color: #666; margin-top: 10px;">
+                        Tip: ${camera.type} | ID: ${camera.id}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Modal açma/kapama
+        function openAddCameraModal() {
+            document.getElementById('addCameraModal').style.display = 'block';
+            document.getElementById('addCameraForm').reset();
+            updateCameraForm();
+        }
+
+        function closeAddCameraModal() {
+            document.getElementById('addCameraModal').style.display = 'none';
+        }
+
+        // Modal dışına tıklanınca kapat
+        window.onclick = function(event) {
+            const modal = document.getElementById('addCameraModal');
+            if (event.target == modal) {
+                closeAddCameraModal();
+            }
+        }
+
+        // Kamera ekleme formu
+        document.getElementById('addCameraForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const cameraData = {
+                name: document.getElementById('cameraName').value,
+                type: document.getElementById('cameraType').value,
+                url: document.getElementById('cameraUrl').value,
+                index: parseInt(document.getElementById('cameraIndex').value),
+                username: document.getElementById('cameraUsername').value,
+                password: document.getElementById('cameraPassword').value,
+                width: document.getElementById('cameraWidth').value ? parseInt(document.getElementById('cameraWidth').value) : null,
+                height: document.getElementById('cameraHeight').value ? parseInt(document.getElementById('cameraHeight').value) : null,
+                fps: document.getElementById('cameraFps').value ? parseInt(document.getElementById('cameraFps').value) : null
+            };
+
+            try {
+                const response = await fetch('/api/cameras', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cameraData)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Kamera başarıyla eklendi!');
+                    closeAddCameraModal();
+                    loadCameras();
+                } else {
+                    alert('Hata: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Kamera eklenirken hata:', error);
+                alert('Kamera eklenirken bir hata oluştu');
+            }
+        });
+
+        // Kamera silme
+        async function deleteCamera(cameraId) {
+            if (!confirm('Bu kamerayı silmek istediğinizden emin misiniz?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/cameras/${cameraId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    loadCameras();
+                } else {
+                    alert('Hata: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Kamera silinirken hata:', error);
+                alert('Kamera silinirken bir hata oluştu');
+            }
+        }
+
+        // Kamera testi
+        async function testCamera(cameraId) {
+            try {
+                const response = await fetch(`/api/cameras/${cameraId}/test`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Kamera bağlantısı başarılı!');
+                } else {
+                    alert('Hata: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Kamera test edilirken hata:', error);
+                alert('Kamera test edilirken bir hata oluştu');
+            }
+        }
+    </script>
+</body>
+</html>
+
