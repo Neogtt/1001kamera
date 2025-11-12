@@ -246,25 +246,32 @@ def test_camera(camera_id):
 if __name__ == '__main__':
     load_camera_configs()
     import socket
+    import os
     
-    # Port 8080'i dene, yoksa boş port bul
-    def find_free_port(start_port=8080):
-        port = start_port
-        while port < start_port + 100:
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    sock.bind(('127.0.0.1', port))
-                    return port
-            except OSError:
-                port += 1
-        # Hiç boş port bulunamazsa 8080'i dene (Flask hata verecek)
-        return 8080
+    # Production'da PORT environment variable'ını kullan
+    port = int(os.environ.get('PORT', 8080))
     
-    port = find_free_port(8080)
+    # Development'ta port bulma
+    if port == 8080 and os.environ.get('FLASK_ENV') != 'production':
+        def find_free_port(start_port=8080):
+            port = start_port
+            while port < start_port + 100:
+                try:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                        sock.bind(('127.0.0.1', port))
+                        return port
+                except OSError:
+                    port += 1
+            return 8080
+        port = find_free_port(8080)
+    
     print(f"\n{'='*60}")
     print(f"🚀 Server başlatılıyor...")
     print(f"🌐 Tarayıcınızda şu adresi açın: http://localhost:{port}")
     print(f"{'='*60}\n")
-    app.run(debug=True, host='0.0.0.0', port=port, threaded=True)
+    
+    # Production'da debug kapalı
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    app.run(debug=debug_mode, host='0.0.0.0', port=port, threaded=True)
 
