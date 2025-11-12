@@ -1,13 +1,33 @@
-from flask import Flask, render_template, jsonify, request, Response
+from flask import Flask, render_template, jsonify, request, Response, session, redirect, url_for
 from flask_cors import CORS
+from functools import wraps
 import cv2
 import threading
 import json
 import os
 from datetime import datetime
+import hashlib
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', '1001medya-secret-key-change-in-production')
 CORS(app)
+
+# Basit kullanıcı sistemi (production'da veritabanı kullanılmalı)
+USERS = {
+    'admin@1001medya.com': {
+        'password': hashlib.sha256('admin123'.encode()).hexdigest(),  # Şifre: admin123
+        'name': 'Admin'
+    }
+}
+
+def login_required(f):
+    """Login gerektiren route'lar için decorator"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Kamera yönetimi
 cameras = {}
@@ -133,12 +153,47 @@ def generate_frames(camera_id):
     if cap:
         cap.release()
 
+@app.route('/login')
+def login():
+    """Giriş sayfası"""
+    if 'user' in session:
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """Giriş API endpoint'i"""
+    data = request.json
+    email = data.get('email', '').lower()
+    password = data.get('password', '')
+    
+    if not email or not password:
+        return jsonify({'success': False, 'message': 'E-posta ve şifre gereklidir'}), 400
+    
+    # Kullanıcı kontrolü
+    if email in USERS:
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        if USERS[email]['password'] == hashed_password:
+            session['user'] = email
+            session['name'] = USERS[email]['name']
+            return jsonify({'success': True, 'message': 'Giriş başarılı'})
+    
+    return jsonify({'success': False, 'message': 'E-posta veya şifre hatalı'}), 401
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """Çıkış API endpoint'i"""
+    session.clear()
+    return jsonify({'success': True, 'message': 'Çıkış yapıldı'})
+
 @app.route('/')
+@login_required
 def index():
     """Ana sayfa"""
     return render_template('index.html')
 
 @app.route('/api/cameras', methods=['GET'])
+@login_required
 def get_cameras():
     """Tüm kameraları listele"""
     cameras_list = []
@@ -154,6 +209,7 @@ def get_cameras():
     return jsonify(cameras_list)
 
 @app.route('/api/cameras', methods=['POST'])
+@login_required
 def add_camera():
     """Yeni kamera ekle"""
     data = request.json
@@ -193,6 +249,7 @@ def add_camera():
     })
 
 @app.route('/api/cameras/<camera_id>', methods=['DELETE'])
+@login_required
 def delete_camera(camera_id):
     """Kamerayı sil"""
     if camera_id in camera_configs:
@@ -204,6 +261,7 @@ def delete_camera(camera_id):
     return jsonify({'success': False, 'message': 'Kamera bulunamadı'}), 404
 
 @app.route('/api/cameras/<camera_id>', methods=['PUT'])
+@login_required
 def update_camera(camera_id):
     """Kamerayı güncelle"""
     if camera_id not in camera_configs:
@@ -216,6 +274,7 @@ def update_camera(camera_id):
     return jsonify({'success': True, 'message': 'Kamera güncellendi'})
 
 @app.route('/video_feed/<camera_id>')
+@login_required
 def video_feed(camera_id):
     """Video stream endpoint'i"""
     if camera_id not in camera_configs:
@@ -225,6 +284,7 @@ def video_feed(camera_id):
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/api/cameras/<camera_id>/test', methods=['POST'])
+@login_required
 def test_camera(camera_id):
     """Kamera bağlantısını test et"""
     config = camera_configs.get(camera_id)

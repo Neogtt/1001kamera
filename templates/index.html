@@ -285,7 +285,10 @@
     <div class="container">
         <div class="header">
             <h1><span class="logo">1001 Medya</span> - Kamera Yönetim Sistemi</h1>
-            <button class="btn btn-primary" onclick="openAddCameraModal()">+ Yeni Kamera Ekle</button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn btn-primary" onclick="openAddCameraModal()">+ Yeni Kamera Ekle</button>
+                <button class="btn btn-danger" onclick="logout()" style="background: #e74c3c;">Çıkış Yap</button>
+            </div>
         </div>
 
         <div id="cameras-container" class="cameras-grid">
@@ -520,6 +523,28 @@
             } catch (error) {
                 console.error('Kamera test edilirken hata:', error);
                 alert('Kamera test edilirken bir hata oluştu');
+            }
+        }
+
+        // Çıkış yap
+        async function logout() {
+            if (!confirm('Çıkış yapmak istediğinizden emin misiniz?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Çıkış yapılırken hata:', error);
+                // Hata olsa bile login sayfasına yönlendir
+                window.location.href = '/login';
             }
         }
     </script>
